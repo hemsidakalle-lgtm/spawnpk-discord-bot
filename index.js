@@ -31,9 +31,11 @@ async function fetchLeaderboard(period) {
 
 function top3ByKillsChange(players) {
   return [...players]
+    .filter(p => (p.killsChange ?? 0) > 0)   // only players who gained kills
     .sort((a, b) => (b.killsChange ?? 0) - (a.killsChange ?? 0))
     .slice(0, 3);
 }
+
 
 async function sendLeaderboard(message, period, label) {
   const data = await fetchLeaderboard(period);
