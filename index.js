@@ -61,7 +61,7 @@ async function sendLeaderboard(message, period, label) {
 
     embed.addFields({
   name: `#${i + 1} ${name}`,
-  value: ` **Gained Kills (session):** +${plusKills}`,
+  value: ` **Kills This Session: ** +${plusKills}`,
   inline: false,
 });
 
