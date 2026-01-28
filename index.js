@@ -60,13 +60,11 @@ async function sendLeaderboard(message, period, label) {
     const plusKills = p.killsChange ?? 0;
 
     embed.addFields({
-      name: `#${i + 1} ${name}`,
- value:
-    `**Period Kills:** +${plusKills}\n` +
+  name: `#${i + 1} ${name}`,
+  value: `🟢 **Period Kills:** +${plusKills}`,
   inline: false,
+});
 
-      inline: false,
-    });
   });
 
   return message.reply({ embeds: [embed] });
