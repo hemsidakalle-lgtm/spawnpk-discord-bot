@@ -7,7 +7,7 @@ const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const BASE_SITE = "https://v0-player-tracker-website.vercel.app";
 
 if (!DISCORD_TOKEN) {
-  console.error("❌ DISCORD_TOKEN missing. Add it in Railway Variables.");
+  console.error("❌ DISCORD_TOKEN missing. Add it in Railway → Variables.");
   process.exit(1);
 }
 
@@ -19,8 +19,9 @@ const client = new Client({
   ],
 });
 
-// ---- Fetch leaderboard from your existing API ----
-// period: "24h" | "7d" | "30d"
+// --------------------
+// LEADERBOARD (your API)
+// --------------------
 async function fetchLeaderboard(period) {
   const url = `${BASE_SITE}/api/leaderboard?period=${period}`;
   const res = await fetch(url);
@@ -28,58 +29,18 @@ async function fetchLeaderboard(period) {
   return await res.json();
 }
 
-// Try to normalize different JSON shapes that your API might return.
-function extractEntries(data) {
-  if (!data) return [];
-
-  // Common shapes:
-  // 1) { entries: [...] }
-  // 2) { leaderboard: [...] }
-  // 3) { data: [...] }
-  // 4) [...] (array root)
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data.entries)) return data.entries;
-  if (Array.isArray(data.leaderboard)) return data.leaderboard;
-  if (Array.isArray(data.data)) return data.data;
-
-  return [];
-}
-
-function getUsername(row) {
-  return row.username || row.user || row.name || row.player || "Unknown";
-}
-
-function getPeriodKills(row) {
-  // Your UI shows "Period Kills" like +25
-  // Possible keys:
-  return (
-    row.periodKills ??
-    row.period_kills ??
-    row.killsGained ??
-    row.kills_gained ??
-    row.deltaKills ??
-    row.delta_kills ??
-    row.killsDelta ??
-    row.kills_delta ??
-    0
-  );
-}
-
-function getTotalKills(row) {
-  return row.kills ?? row.totalKills ?? row.total_kills ?? null;
-}
-
-function getTotalDeaths(row) {
-  return row.deaths ?? row.totalDeaths ?? row.total_deaths ?? null;
-}
-
-function getKdr(row) {
-  return row.kdr ?? row.KDR ?? null;
+function top3ByKillsChange(players) {
+  return [...players]
+    .sort((a, b) => (b.killsChange ?? 0) - (a.killsChange ?? 0))
+    .slice(0, 3);
 }
 
 async function sendLeaderboard(message, period, label) {
   const data = await fetchLeaderboard(period);
-  const entries = extractEntries(data);
+
+  // Your API shape: { players: [...], stats: {...} }
+  const players = Array.isArray(data.players) ? data.players : [];
+  const top3 = top3ByKillsChange(players);
 
   const embed = new EmbedBuilder()
     .setTitle(`🏆 ${label} Leaderboard (Top 3)`)
@@ -87,29 +48,23 @@ async function sendLeaderboard(message, period, label) {
     .setFooter({ text: `Source: ${BASE_SITE}` })
     .setTimestamp(new Date());
 
-  if (!entries.length) {
-    embed.addFields({ name: "No data", value: "No leaderboard entries found." });
+  if (top3.length === 0) {
+    embed.addFields({ name: "No data", value: "No players found." });
     return message.reply({ embeds: [embed] });
   }
 
-  entries.slice(0, 3).forEach((row, i) => {
-    const username = getUsername(row);
-    const periodKills = getPeriodKills(row);
-    const kills = getTotalKills(row);
-    const deaths = getTotalDeaths(row);
-    const kdr = getKdr(row);
-
-    // Build a nice value string even if some fields are missing
-    const lines = [];
-    lines.push(`**Period Kills:** +${periodKills}`);
-
-    if (kills !== null) lines.push(`**Total Kills:** ${kills}`);
-    if (deaths !== null) lines.push(`**Total Deaths:** ${deaths}`);
-    if (kdr !== null) lines.push(`**KDR:** ${kdr}`);
+  top3.forEach((p, i) => {
+    const name = p.displayName || p.username || "Unknown";
+    const plusKills = p.killsChange ?? 0;
 
     embed.addFields({
-      name: `#${i + 1} ${username}`,
-      value: lines.join("\n"),
+      name: `#${i + 1} ${name}`,
+      value:
+        `**Period Kills:** +${plusKills}\n` +
+        `**Total Kills:** ${p.kills ?? "?"}\n` +
+        `**Total Deaths:** ${p.deaths ?? "?"}\n` +
+        `**KDR:** ${p.kdr ?? "?"}\n` +
+        `**ELO:** ${p.elo ?? "?"}`,
       inline: false,
     });
   });
@@ -117,7 +72,9 @@ async function sendLeaderboard(message, period, label) {
   return message.reply({ embeds: [embed] });
 }
 
-// ---- SpawnPK lookup ----
+// --------------------
+// LOOKUP (SpawnPK)
+// --------------------
 async function lookupSpawnPK(username) {
   const url = `https://spawnpk.net/highscores/index.php?name=${encodeURIComponent(
     username
@@ -145,6 +102,8 @@ async function lookupSpawnPK(username) {
     .map((_, td) => $(td).text().trim())
     .get();
 
+  // Based on your earlier SpawnPK example:
+  // [name, mode, kills, deaths, kdr, streak, elo] can vary — this is best effort.
   return {
     username,
     mode: cols[2] || "Unknown",
@@ -166,12 +125,11 @@ client.on("messageCreate", async (message) => {
   const arg = args.join(" ").trim();
 
   try {
-    // New leaderboard commands:
+    // Your new commands:
     if (cmd === "!leaderd") return await sendLeaderboard(message, "24h", "DAILY (24h)");
     if (cmd === "!leaderw") return await sendLeaderboard(message, "7d", "WEEKLY (7d)");
     if (cmd === "!leaderm") return await sendLeaderboard(message, "30d", "MONTHLY (30d)");
 
-    // Lookup:
     if (cmd === "!lookup") {
       if (!arg) return message.reply("❌ Usage: !lookup <username>");
 
