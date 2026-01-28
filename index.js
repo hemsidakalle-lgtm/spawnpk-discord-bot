@@ -61,12 +61,10 @@ async function sendLeaderboard(message, period, label) {
 
     embed.addFields({
       name: `#${i + 1} ${name}`,
-value:
-  `🟢 **Period Kills:** +${plusKills}\n` +
-  `🔵 **Total Kills:** ${p.kills ?? "?"}\n` +
-  `🔴 **Total Deaths:** ${p.deaths ?? "?"}\n` +
-  `📊 **KDR:** ${p.kdr ?? "?"}\n` +
-  `🏅 **ELO:** ${p.elo ?? "?"}`,
+ value:
+    `**Period Kills:** +${plusKills}\n` +
+    `**ELO:** ${p.elo ?? "?"}`,
+  inline: false,
 
       inline: false,
     });
