@@ -124,6 +124,31 @@ client.on("messageCreate", async (message) => {
   const arg = args.join(" ").trim();
 
   try {
+    // Help command
+if (cmd === "!help") {
+  const embed = new EmbedBuilder()
+    .setTitle("📘 SpawnPK Leaderboard Bot – Help")
+    .setDescription("Here are the available commands:")
+    .addFields(
+      {
+        name: "🏆 Leaderboards",
+        value:
+          "`!leaderD` – Daily kills gained\n" +
+          "`!leaderW` – Weekly kills gained\n" +
+          "`!leaderM` – Monthly kills gained",
+      },
+      {
+        name: "🔍 Player Lookup",
+        value:
+          "`!lookup <username>` – View SpawnPK highscores for a player\n" +
+          "Example: `!lookup hellspawn`",
+      }
+    )
+    .setFooter({ text: "Data updates automatically from SpawnPK" });
+
+  return message.reply({ embeds: [embed] });
+}
+
     // Your new commands:
     if (cmd === "!leaderd") return await sendLeaderboard(message, "24h", "DAILY (24h)");
     if (cmd === "!leaderw") return await sendLeaderboard(message, "7d", "WEEKLY (7d)");
