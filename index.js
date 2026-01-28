@@ -106,16 +106,17 @@ async function lookupSpawnPK(username) {
 
   // Based on your earlier SpawnPK example:
   // [name, mode, kills, deaths, kdr, streak, elo] can vary — this is best effort.
-  return {
-    username,
-    mode: cols[2] || "Unknown",
-    kills: cols[3] || "?",
-    deaths: cols[4] || "?",
-    kdr: cols[5] || "?",
-    streak: cols[6] || "?",
-    elo: cols[7] || "?",
-    url,
-  };
+ return {
+  username,
+  mode: cols[1] || "Unknown",
+  kills: cols[2] || "?",
+  deaths: cols[3] || "?",
+  kdr: cols[4] || "?",
+  streak: cols[5] || "?",
+  elo: cols[6] || "?",
+  url,
+};
+
 }
 
 client.on("messageCreate", async (message) => {
